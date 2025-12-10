@@ -66,6 +66,7 @@
 
     .scene {
       perspective: 1000px;
+      perspective-origin: center;
       width: 100%;
       height: 100%;
       display: flex;
@@ -79,6 +80,7 @@
     .logo-wrapper {
       text-align: center;
       transform-style: preserve-3d;
+      transform-origin: center center;
       will-change: transform;
       /* Restored smooth transition */
       transition: transform 0.1s ease-out;
@@ -158,8 +160,9 @@
     const intensity = 35;
 
     function handleMove(x, y) {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
+      // Use clientWidth/Height to exclude scrollbars and get accurate visual viewport
+      const w = document.documentElement.clientWidth || window.innerWidth;
+      const h = document.documentElement.clientHeight || window.innerHeight;
 
       // Calculate percentages for CSS variables
       const xPercent = (x / w) * 100;
