@@ -157,9 +157,7 @@
     // Intensity of the tilt
     const intensity = 35;
 
-    document.addEventListener('mousemove', (event) => {
-      const x = event.clientX;
-      const y = event.clientY;
+    function handleMove(x, y) {
       const w = window.innerWidth;
       const h = window.innerHeight;
 
@@ -184,16 +182,37 @@
 
       // Apply 3D Tilt
       target.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-    });
+    }
 
-    // Reset on mouse leave
-    document.addEventListener('mouseleave', () => {
+    function resetTilt() {
       target.style.transform = 'rotateX(0deg) rotateY(0deg)';
       root.style.setProperty('--mouse-x', '50%');
       root.style.setProperty('--mouse-y', '50%');
       root.style.setProperty('--tx', '0');
       root.style.setProperty('--ty', '0');
+    }
+
+    // Mouse Events
+    document.addEventListener('mousemove', (event) => {
+      handleMove(event.clientX, event.clientY);
     });
+
+    document.addEventListener('mouseleave', resetTilt);
+
+    // Touch Events
+    document.addEventListener('touchstart', (event) => {
+      event.preventDefault(); // Prevent mouse emulation and scrolling
+      const touch = event.touches[0];
+      handleMove(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (event) => {
+      event.preventDefault(); // Prevent scrolling while interacting
+      const touch = event.touches[0];
+      handleMove(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    document.addEventListener('touchend', resetTilt);
   </script>
 </body>
 
