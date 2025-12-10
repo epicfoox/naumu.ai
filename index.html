@@ -64,9 +64,8 @@
       transition: transform 0.1s ease-out;
       cursor: default;
       user-select: none;
-      /* Entrance Animation */
-      opacity: 0;
-      animation: floatIn 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      /* Entrance Animation removed to prevent conflict with tilt */
+      opacity: 1;
     }
 
     h1 {
@@ -76,6 +75,9 @@
       line-height: 0.9;
       letter-spacing: -0.05em;
       color: #1a1a1a;
+      /* Entrance Animation */
+      opacity: 0;
+      animation: floatIn 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
       /* Dynamic Shadow for Depth */
       text-shadow:
         calc((var(--mouse-x) - 50%) * -30px) calc((var(--mouse-y) - 50%) * -30px) 30px rgba(0, 0, 0, 0.1);
