@@ -14,6 +14,8 @@
     :root {
       --mouse-x: 50%;
       --mouse-y: 50%;
+      --tx: 0;
+      --ty: 0;
     }
 
     body,
@@ -40,8 +42,25 @@
       height: 100%;
       /* Increased contrast for visibility */
       background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), #ffffff 0%, #dbe0e8 100%);
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    /* Subtle Structured Grid Pattern */
+    body::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background-image: radial-gradient(#8892b0 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.15;
       z-index: -1;
       pointer-events: none;
+      transform: translate(calc(var(--tx) * -40px), calc(var(--ty) * -40px));
+      transition: transform 0.1s ease-out;
     }
 
     .scene {
@@ -155,6 +174,10 @@
       const centerX = (x - (w / 2)) / (w / 2);
       const centerY = (y - (h / 2)) / (h / 2);
 
+      // Set raw values for parallax background
+      root.style.setProperty('--tx', centerX);
+      root.style.setProperty('--ty', centerY);
+
       const rotateY = centerX * intensity;
       const rotateX = -centerY * intensity;
 
@@ -167,6 +190,8 @@
       target.style.transform = 'rotateX(0deg) rotateY(0deg)';
       root.style.setProperty('--mouse-x', '50%');
       root.style.setProperty('--mouse-y', '50%');
+      root.style.setProperty('--tx', '0');
+      root.style.setProperty('--ty', '0');
     });
   </script>
 </body>
