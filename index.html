@@ -82,8 +82,6 @@
       transform-style: preserve-3d;
       transform-origin: center center;
       will-change: transform;
-      /* Restored smooth transition */
-      transition: transform 0.1s ease-out;
       cursor: default;
       user-select: none;
       /* Entrance Animation removed to prevent conflict with tilt */
@@ -156,51 +154,87 @@
     const target = document.getElementById('target');
     const root = document.documentElement;
 
-    // Intensity of the tilt
-    const intensity = 35;
+    // Configuration
+    const inputIntensity = 35; // Intensity of mouse/touch tilt
+    const autoIntensity = 5;   // Intensity of the constant circular motion
+    const autoSpeed = 0.0005;   // Speed of the circular motion
+
+    // State
+    let inputX = 0; // Current smoothed X
+    let inputY = 0; // Current smoothed Y
+    let targetInputX = 0; // Target X from mouse/touch
+    let targetInputY = 0; // Target Y from mouse/touch
+    let time = 0;
 
     function handleMove(x, y) {
       // Use clientWidth/Height to exclude scrollbars and get accurate visual viewport
       const w = document.documentElement.clientWidth || window.innerWidth;
       const h = document.documentElement.clientHeight || window.innerHeight;
 
-      // Calculate percentages for CSS variables
+      // Calculate percentages for CSS variables (Lighting/Background)
       const xPercent = (x / w) * 100;
       const yPercent = (y / h) * 100;
 
-      // Update CSS variables for lighting/shadows
       root.style.setProperty('--mouse-x', `${xPercent}%`);
       root.style.setProperty('--mouse-y', `${yPercent}%`);
 
-      // Calculate rotation (-1 to 1 range)
-      const centerX = (x - (w / 2)) / (w / 2);
-      const centerY = (y - (h / 2)) / (h / 2);
+      // Calculate normalized position (-1 to 1)
+      // Update TARGET values for smoothing
+      targetInputX = (x - (w / 2)) / (w / 2);
+      targetInputY = (y - (h / 2)) / (h / 2);
 
-      // Set raw values for parallax background
-      root.style.setProperty('--tx', centerX);
-      root.style.setProperty('--ty', centerY);
-
-      const rotateY = centerX * intensity;
-      const rotateX = -centerY * intensity;
-
-      // Apply 3D Tilt
-      target.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      // Set raw values for parallax background (can stay instant or be smoothed too)
+      root.style.setProperty('--tx', targetInputX);
+      root.style.setProperty('--ty', targetInputY);
     }
 
-    function resetTilt() {
-      target.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    function resetInput() {
+      targetInputX = 0;
+      targetInputY = 0;
       root.style.setProperty('--mouse-x', '50%');
       root.style.setProperty('--mouse-y', '50%');
       root.style.setProperty('--tx', '0');
       root.style.setProperty('--ty', '0');
     }
 
+    // Animation Loop
+    function update() {
+      time += autoSpeed;
+
+      // Smoothly interpolate current input towards target input (Lerp)
+      // 0.1 = 10% of the distance per frame (adjust for speed/smoothness)
+      inputX += (targetInputX - inputX) * 0.1;
+      inputY += (targetInputY - inputY) * 0.1;
+
+      // Calculate Auto-Tilt (Circular Motion)
+      const autoRotateX = Math.sin(time * 1000) * autoIntensity;
+      const autoRotateY = Math.cos(time * 1000) * autoIntensity;
+
+      // Calculate Input Tilt (Mouse/Touch)
+      // Mouse Right (Positive X) -> Rotate Y Positive
+      // Mouse Down (Positive Y) -> Rotate X Negative
+      const inputRotateY = inputX * inputIntensity;
+      const inputRotateX = -inputY * inputIntensity;
+
+      // Combine them
+      const finalRotateX = inputRotateX + autoRotateX;
+      const finalRotateY = inputRotateY + autoRotateY;
+
+      // Apply Transform
+      target.style.transform = `rotateX(${finalRotateX}deg) rotateY(${finalRotateY}deg)`;
+
+      requestAnimationFrame(update);
+    }
+
+    // Start the loop
+    update();
+
     // Mouse Events
     document.addEventListener('mousemove', (event) => {
       handleMove(event.clientX, event.clientY);
     });
 
-    document.addEventListener('mouseleave', resetTilt);
+    document.addEventListener('mouseleave', resetInput);
 
     // Touch Events
     document.addEventListener('touchstart', (event) => {
@@ -215,7 +249,7 @@
       handleMove(touch.clientX, touch.clientY);
     }, { passive: false });
 
-    document.addEventListener('touchend', resetTilt);
+    document.addEventListener('touchend', resetInput);
   </script>
 </body>
 
