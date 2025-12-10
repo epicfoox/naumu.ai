@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>naumu.ai</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* CSS: The Visual Structure */
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #ffffff;
+      color: #000000;
+      font-family: 'Comfortaa', sans-serif;
+      overflow: hidden;
+      /* No scrollbars */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .scene {
+      perspective: 1200px;
+      /* Determines the depth of the 3D space */
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .logo-wrapper {
+      text-align: center;
+      transform-style: preserve-3d;
+      /* Allows child elements to exist in 3D space */
+      transition: transform 0.1s ease-out;
+      /* Smooths the mouse movement */
+      cursor: default;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 12vw;
+      /* Massive, responsive typography */
+      font-weight: 700;
+      /* Bold Comfortaa */
+      margin: 0;
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+      color: #111;
+    }
+
+    p {
+      font-size: 2.5vw;
+      font-weight: 300;
+      /* Light Comfortaa */
+      margin-top: 1vh;
+      color: #666;
+      letter-spacing: 0.05em;
+
+      opacity: 0.8;
+    }
+
+    /* Mobile Optimization */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 18vw;
+      }
+
+      p {
+        font-size: 5vw;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="scene" id="scene">
+    <div class="logo-wrapper" id="target">
+      <h1>naumu.ai</h1>
+      <p>ideas, structured.</p>
+    </div>
+  </div>
+
+  <script>
+    /* JS: The Interactive Behavior */
+    const target = document.getElementById('target');
+    const scene = document.getElementById('scene');
+
+    // Intensity of the tilt (Higher number = less movement)
+    const intensity = 25;
+
+    document.addEventListener('mousemove', (event) => {
+      const x = event.clientX;
+      const y = event.clientY;
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      // Calculate mouse position as a percentage (-1 to 1) from the center
+      const centerX = (x - (w / 2)) / (w / 2);
+      const centerY = (y - (h / 2)) / (h / 2);
+
+      // Rotate based on mouse position
+      // Mouse Right -> Rotate Y Positive
+      // Mouse Down -> Rotate X Negative
+      const rotateY = centerX * intensity;
+      const rotateX = -centerY * intensity;
+
+      target.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+
+    // Reset to flat when mouse leaves the window
+    document.addEventListener('mouseleave', () => {
+      target.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    });
+  </script>
+</body>
+
+</html>
