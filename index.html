@@ -11,25 +11,41 @@
 
   <style>
     /* CSS: The Visual Structure */
+    :root {
+      --mouse-x: 50%;
+      --mouse-y: 50%;
+    }
+
     body,
     html {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      background-color: #ffffff;
+      background-color: #f8f9fa;
       color: #000000;
       font-family: 'Comfortaa', sans-serif;
       overflow: hidden;
-      /* No scrollbars */
       display: flex;
       justify-content: center;
       align-items: center;
     }
 
+    /* Dynamic Spotlight Background */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 1) 0%, #e6e9f0 100%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
     .scene {
-      perspective: 1200px;
-      /* Determines the depth of the 3D space */
+      perspective: 1000px;
       width: 100%;
       height: 100%;
       display: flex;
@@ -40,33 +56,48 @@
     .logo-wrapper {
       text-align: center;
       transform-style: preserve-3d;
-      /* Allows child elements to exist in 3D space */
-      transition: transform 0.1s ease-out;
-      /* Smooths the mouse movement */
+      will-change: transform;
       cursor: default;
       user-select: none;
+      /* Entrance Animation */
+      opacity: 0;
+      animation: floatIn 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
     }
 
     h1 {
       font-size: 12vw;
-      /* Massive, responsive typography */
       font-weight: 700;
-      /* Bold Comfortaa */
       margin: 0;
       line-height: 0.9;
       letter-spacing: -0.05em;
-      color: #111;
+      color: #1a1a1a;
+      /* Dynamic Shadow for Depth */
+      text-shadow:
+        calc((var(--mouse-x) - 50%) * -30px) calc((var(--mouse-y) - 50%) * -30px) 30px rgba(0, 0, 0, 0.1);
+      transition: text-shadow 0.1s ease;
     }
 
     p {
       font-size: 2.5vw;
       font-weight: 300;
-      /* Light Comfortaa */
       margin-top: 1vh;
-      color: #666;
+      color: #555;
       letter-spacing: 0.05em;
+      opacity: 0;
+      /* Hidden initially for stagger effect */
+      animation: floatIn 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s forwards;
+    }
 
-      opacity: 0.8;
+    @keyframes floatIn {
+      0% {
+        opacity: 0;
+        transform: translateY(30px) translateZ(-50px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0) translateZ(0);
+      }
     }
 
     /* Mobile Optimization */
@@ -94,34 +125,41 @@
   <script>
     /* JS: The Interactive Behavior */
     const target = document.getElementById('target');
-    const scene = document.getElementById('scene');
+    const root = document.documentElement;
 
-    // Intensity of the tilt (Higher number = less movement)
+    // Intensity of the tilt
     const intensity = 25;
 
     document.addEventListener('mousemove', (event) => {
       const x = event.clientX;
       const y = event.clientY;
-
       const w = window.innerWidth;
       const h = window.innerHeight;
 
-      // Calculate mouse position as a percentage (-1 to 1) from the center
+      // Calculate percentages for CSS variables
+      const xPercent = (x / w) * 100;
+      const yPercent = (y / h) * 100;
+
+      // Update CSS variables for lighting/shadows
+      root.style.setProperty('--mouse-x', `${xPercent}%`);
+      root.style.setProperty('--mouse-y', `${yPercent}%`);
+
+      // Calculate rotation (-1 to 1 range)
       const centerX = (x - (w / 2)) / (w / 2);
       const centerY = (y - (h / 2)) / (h / 2);
 
-      // Rotate based on mouse position
-      // Mouse Right -> Rotate Y Positive
-      // Mouse Down -> Rotate X Negative
       const rotateY = centerX * intensity;
       const rotateX = -centerY * intensity;
 
+      // Apply 3D Tilt
       target.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     });
 
-    // Reset to flat when mouse leaves the window
+    // Reset on mouse leave
     document.addEventListener('mouseleave', () => {
       target.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      root.style.setProperty('--mouse-x', '50%');
+      root.style.setProperty('--mouse-y', '50%');
     });
   </script>
 </body>
