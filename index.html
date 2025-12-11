@@ -298,6 +298,23 @@
       targetGyroX = deltaGamma / maxTilt;
       targetGyroY = deltaBeta / maxTilt;
     });
+
+    // iOS 13+ Permission Request
+    function requestGyroPermission() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+          .then(permissionState => {
+            if (permissionState === 'granted') {
+              // Permission granted
+            }
+          })
+          .catch(console.error);
+      }
+    }
+
+    // Trigger permission request on first interaction
+    document.addEventListener('click', requestGyroPermission, { once: true });
+    document.addEventListener('touchstart', requestGyroPermission, { once: true });
   </script>
 </body>
 
