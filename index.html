@@ -60,7 +60,6 @@
       z-index: -1;
       pointer-events: none;
       transform: translate(calc(var(--tx) * -40px), calc(var(--ty) * -40px));
-      transition: transform 0.1s ease-out;
     }
 
     .scene {
@@ -190,10 +189,6 @@
       // Update TARGET values for smoothing
       targetInputX = (x - (w / 2)) / (w / 2);
       targetInputY = (y - (h / 2)) / (h / 2);
-
-      // Set raw values for parallax background (can stay instant or be smoothed too)
-      root.style.setProperty('--tx', targetInputX);
-      root.style.setProperty('--ty', targetInputY);
     }
 
     function resetInput() {
@@ -201,8 +196,6 @@
       targetInputY = 0;
       root.style.setProperty('--mouse-x', '50%');
       root.style.setProperty('--mouse-y', '50%');
-      root.style.setProperty('--tx', '0');
-      root.style.setProperty('--ty', '0');
     }
 
     // Animation Loop
@@ -238,6 +231,10 @@
 
       // Apply Transform
       target.style.transform = `rotateX(${finalRotateX}deg) rotateY(${finalRotateY}deg)`;
+
+      // Update Parallax Background (Input + Gyro)
+      root.style.setProperty('--tx', inputX + gyroX);
+      root.style.setProperty('--ty', inputY + gyroY);
 
       requestAnimationFrame(update);
     }
