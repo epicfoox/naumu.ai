@@ -291,8 +291,9 @@
       // Normalize to -1 to 1 range
       // Note: Gamma (Left/Right) maps to X axis input
       // Note: Beta (Up/Down) maps to Y axis input
-      targetGyroX = deltaGamma / maxTilt;
-      targetGyroY = deltaBeta / maxTilt;
+      // Inverted signs so the logo looks towards the user when tilting
+      targetGyroX = -(deltaGamma / maxTilt);
+      targetGyroY = -(deltaBeta / maxTilt);
     });
 
     // iOS 13+ Permission Request
