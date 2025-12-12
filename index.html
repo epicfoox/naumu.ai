@@ -43,23 +43,21 @@
       height: 100%;
       /* Increased contrast for visibility */
       background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), #ffffff 0%, #dbe0e8 100%);
-      z-index: -2;
+      z-index: -3;
       pointer-events: none;
     }
 
-    /* Subtle Structured Grid Pattern */
-    body::after {
-      content: '';
+
+
+    /* Knowledge Graph Canvas */
+    #bg-canvas {
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background-image: radial-gradient(#8892b0 1.5px, transparent 1.5px);
-      background-size: 40px 40px;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       z-index: -1;
       pointer-events: none;
-      transform: translate(calc(var(--tx) * -40px), calc(var(--ty) * -40px));
     }
 
     .scene {
@@ -140,6 +138,7 @@
 
 <body>
 
+  <canvas id="bg-canvas"></canvas>
   <div class="scene" id="scene">
     <div class="logo-wrapper" id="target">
       <h1>naumu</h1>
@@ -198,6 +197,224 @@
       root.style.setProperty('--mouse-y', '50%');
     }
 
+    // --- Knowledge Graph Background Animation (3D) ---
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let cx, cy; // Center of screen
+
+    // Graph State
+    const nodes = [];
+    const edges = [];
+    const maxNodes = 120; // Increased to allow more spread
+    const spawnInterval = 50; // Faster spawn (50ms)
+    let lastSpawnTime = 0;
+
+    // 3D Configuration
+    const focalLength = 800; // Perspective strength
+    const rotationStrength = 0.05; // Much more subtle rotation (0.5 -> 0.05)
+
+    class Node {
+      constructor(x, y, z, parent = null) {
+        // Position relative to center (0,0,0)
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.parent = parent;
+
+        this.radius = Math.random() * 2 + 2; // 2-4px
+
+        // 3D Velocity
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.vz = (Math.random() - 0.5) * 0.5;
+
+        this.opacity = 0; // Start invisible
+      }
+
+      update() {
+        // Drift in 3D
+        this.x += this.vx;
+        this.y += this.vy;
+        this.z += this.vz;
+
+        // Soft bounds (bounce back if too far)
+        const limit = 1000;
+        if (Math.abs(this.x) > limit) this.vx *= -1;
+        if (Math.abs(this.y) > limit) this.vy *= -1;
+        if (Math.abs(this.z) > limit) this.vz *= -1;
+
+        // Fade in
+        if (this.opacity < 1) {
+          this.opacity += 0.02; // Faster fade
+        }
+      }
+    }
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+      cx = width / 2;
+      cy = height / 2;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Initialize with 4 corner clusters
+    function initGraph() {
+      nodes.length = 0;
+      edges.length = 0;
+
+      const corners = [
+        { x: -width / 2, y: -height / 2 },
+        { x: width / 2, y: -height / 2 },
+        { x: width / 2, y: height / 2 },
+        { x: -width / 2, y: height / 2 }
+      ];
+
+      corners.forEach(c => {
+        // Root
+        const root = new Node(c.x, c.y, 0);
+        nodes.push(root);
+
+        // Create 2 neighbors immediately to avoid single dot look
+        for (let i = 0; i < 2; i++) {
+          const dist = Math.random() * 100 + 50;
+          const angleToCenter = Math.atan2(-c.y, -c.x);
+          const theta = angleToCenter + (Math.random() - 0.5) * 1.5;
+          const phi = Math.acos((Math.random() * 2) - 1);
+
+          const nx = root.x + dist * Math.sin(phi) * Math.cos(theta);
+          const ny = root.y + dist * Math.sin(phi) * Math.sin(theta);
+          const nz = root.z + dist * Math.cos(phi);
+
+          const neighbor = new Node(nx, ny, nz, root);
+          nodes.push(neighbor);
+          edges.push({ from: root, to: neighbor });
+        }
+      });
+
+      lastSpawnTime = Date.now();
+    }
+    initGraph();
+
+    function updateGraph() {
+      const now = Date.now();
+
+      // Spawn new node
+      if (nodes.length < maxNodes && now - lastSpawnTime > spawnInterval) {
+        const parentNode = nodes[Math.floor(Math.random() * nodes.length)];
+
+        let attempts = 0;
+        let placed = false;
+
+        while (attempts < 10 && !placed) {
+          // Smaller distance for "slow" spread
+          const dist = Math.random() * 150 + 50;
+
+          // Bias angle towards center (0,0)
+          const angleToCenter = Math.atan2(-parentNode.y, -parentNode.x);
+          // Spread of +/- 60 degrees (approx 1 radian) around the vector to center
+          const theta = angleToCenter + (Math.random() - 0.5) * 3;
+
+          const phi = Math.acos((Math.random() * 2) - 1); // Random Polar angle
+
+          const newX = parentNode.x + dist * Math.sin(phi) * Math.cos(theta);
+          const newY = parentNode.y + dist * Math.sin(phi) * Math.sin(theta);
+          const newZ = parentNode.z + dist * Math.cos(phi);
+
+          // Exclusion Zone: Cylinder along Z axis
+          // Keep center clear of nodes (radius 250px)
+          const r = Math.sqrt(newX * newX + newY * newY);
+          if (r > 250) {
+            const newNode = new Node(newX, newY, newZ, parentNode);
+            nodes.push(newNode);
+            edges.push({ from: parentNode, to: newNode });
+            lastSpawnTime = now;
+            placed = true;
+          }
+          attempts++;
+        }
+      }
+
+      // Update nodes
+      nodes.forEach(node => node.update());
+    }
+
+    function project(x, y, z, rotX, rotY) {
+      // 1. Rotate around Y axis (Yaw) - controlled by Mouse X
+      // x' = x cos θ + z sin θ
+      // z' = -x sin θ + z cos θ
+      let x1 = x * Math.cos(rotY) + z * Math.sin(rotY);
+      let z1 = -x * Math.sin(rotY) + z * Math.cos(rotY);
+      let y1 = y;
+
+      // 2. Rotate around X axis (Pitch) - controlled by Mouse Y
+      // y' = y cos φ - z' sin φ
+      // z'' = y sin φ + z' cos φ
+      let y2 = y1 * Math.cos(rotX) - z1 * Math.sin(rotX);
+      let z2 = y1 * Math.sin(rotX) + z1 * Math.cos(rotX);
+      let x2 = x1;
+
+      // 3. Project to 2D
+      // scale = f / (f + z)
+      // We push z back by some amount so we don't divide by zero or get negative depth issues
+      // Camera is at z = -focalLength
+      const scale = focalLength / (focalLength + z2 + 500);
+
+      return {
+        x: x2 * scale + cx,
+        y: y2 * scale + cy,
+        scale: scale,
+        z: z2 // Return depth for sorting if needed (not needed for simple lines)
+      };
+    }
+
+    function drawGraph() {
+      ctx.clearRect(0, 0, width, height);
+
+      // Calculate rotation based on input
+      // inputX/Y are -1 to 1.
+      const rotY = inputX * rotationStrength; // Yaw
+      const rotX = -inputY * rotationStrength; // Pitch
+
+      // Project all nodes first
+      const projectedNodes = nodes.map(node => {
+        const p = project(node.x, node.y, node.z, rotX, rotY);
+        return { ...p, node };
+      });
+
+      // Draw Edges
+      ctx.lineWidth = 1.5;
+      edges.forEach(edge => {
+        // Find projected positions
+        const p1 = projectedNodes.find(p => p.node === edge.from);
+        const p2 = projectedNodes.find(p => p.node === edge.to);
+
+        if (p1 && p2) {
+          const edgeOpacity = Math.min(edge.from.opacity, edge.to.opacity) * 0.15;
+          ctx.strokeStyle = `rgba(136, 146, 176, ${edgeOpacity})`;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      });
+
+      // Draw Nodes
+      projectedNodes.forEach(p => {
+        ctx.beginPath();
+        // Scale radius by perspective
+        const r = Math.max(0.5, p.node.radius * p.scale);
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(136, 146, 176, ${p.node.opacity})`;
+        ctx.fill();
+      });
+    }
+    // --------------------------------------------
+
     // Animation Loop
     function update() {
       time += autoSpeed;
@@ -235,6 +452,10 @@
       // Update Parallax Background (Input + Gyro)
       root.style.setProperty('--tx', inputX + gyroX);
       root.style.setProperty('--ty', inputY + gyroY);
+
+      // Update and Draw Graph
+      updateGraph();
+      drawGraph();
 
       requestAnimationFrame(update);
     }
