@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>naumu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,7 +36,7 @@
     /* Dynamic Spotlight Background */
     body::before {
       content: '';
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
@@ -51,7 +51,7 @@
 
     /* Knowledge Graph Canvas */
     #bg-canvas {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
@@ -158,7 +158,7 @@
     @media (max-width: 768px) {
       body.focused .input-container {
         top: auto;
-        bottom: 20px;
+        bottom: calc(20px + env(safe-area-inset-bottom));
         transform: translateX(-50%);
       }
     }
@@ -223,7 +223,7 @@
     /* Override Focus State when Submitted */
     body.submitted .input-container {
       top: auto !important;
-      bottom: 5vh !important;
+      bottom: calc(5vh + env(safe-area-inset-bottom)) !important;
       /* Move to bottom */
       transform: translateX(-50%) !important;
       width: calc(100% - 48px) !important;
