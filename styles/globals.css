@@ -34,22 +34,27 @@ body::before {
 }
 
 /* Knowledge Graph Canvas (Canvas or Component) */
-#bg-canvas, .force-graph-container {
+#bg-canvas {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: -1;
-  /* pointer-events: none; -> ForceGraph needs pointer events? Maybe for drag? */
+  pointer-events: none;
 }
 
-/* Update: If we want interactive graph, we allow pointer events. 
-   But the design says 'transient loop'. The previous canvas was non-interactive?
-   Original #bg-canvas had pointer-events: none.
-   New graph should probably be interactive (zoom/pan). 
-   So I will NOT set pointer-events: none for .force-graph-container 
-*/
+.force-graph-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* The graph now sits above .scene (z-index: 1) but below input-container (z-index: 100) */
 
 .scene {
   perspective: 1000px;
@@ -62,7 +67,8 @@ body::before {
   /* Ensure scene is above the background */
   position: relative;
   z-index: 1;
-  pointer-events: none; /* Let clicks pass through scene to graph if not hitting content */
+  pointer-events: none;
+  /* Let clicks pass through scene to graph if not hitting content */
 }
 
 .logo-wrapper {
@@ -73,7 +79,8 @@ body::before {
   cursor: default;
   user-select: none;
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: none;
+  /* Allow clicks to pass through to graph */
 }
 
 h1 {

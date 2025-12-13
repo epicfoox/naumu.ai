@@ -8,9 +8,22 @@ import type { KnowledgeGraph } from '../types';
 export default function Home() {
     const [graphData, setGraphData] = useState<KnowledgeGraph>({ nodes: [], edges: [] });
 
+
+    // Load from local storage on mount
     useEffect(() => {
-        setGraphData(generateInitialGraph());
+        const storedGraph = localStorage.getItem('naumu-graph');
+        if (storedGraph) {
+            try {
+                setGraphData(JSON.parse(storedGraph));
+            } catch (e) {
+                console.error("Failed to parse stored graph", e);
+                setGraphData(generateInitialGraph());
+            }
+        } else {
+            setGraphData(generateInitialGraph());
+        }
     }, []);
+
     const [inputText, setInputText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -27,21 +40,11 @@ export default function Home() {
 
             document.documentElement.style.setProperty('--mouse-x', `${xPercent}%`);
             document.documentElement.style.setProperty('--mouse-y', `${yPercent}%`);
-
-            // Tilt logic handled by CSS usage of these vars? 
-            // Legacy JS calculated `targetInputX` and `inputX` for smooth animation.
-            // For simplicity/performance in React, we can either:
-            // 1. Re-implement the requestAnimationFrame loop.
-            // 2. Just update CSS vars and let CSS transitions handle it (less smooth for complex parallax).
-            // The legacy code performed complex smoothing. simpler to rely on CSS.
-            // But the Logo H1 uses text-shadow based on these vars directly.
         };
 
         const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
         const onTouchMove = (e: TouchEvent) => {
-            // Prevent default only if not on input (but handled by passive: false usually)
             if ((e.target as Element).closest('input, textarea, button')) return;
-            // e.preventDefault(); // React synthetic events? This is native listener.
             const touch = e.touches[0];
             handleMove(touch.clientX, touch.clientY);
         };
@@ -74,22 +77,26 @@ export default function Home() {
 
     // --- Interaction Handlers ---
     const handleFocus = () => {
-        // Delay slightly to avoid layout thrashing/race conditions
         setTimeout(() => setIsFocused(true), 100);
     };
 
-    const handleBlur = () => {
-        // We handle blur via click-away listener on body usually, 
-        // but the textarea onBlur is also good.
-        // However, legacy code used a global click listener to dismiss.
+    const handleClear = () => {
+        localStorage.removeItem('naumu-graph');
+        setGraphData(generateInitialGraph());
+        setInputText('');
     };
 
     const handleSubmit = async () => {
         if (!inputText.trim()) return;
 
         setIsLoading(true);
-        setIsSubmitted(true); // Move UI to submitted state immediately? Or after? Legacy: immediately.
+        setIsSubmitted(true);
         setIsFocused(false);
+
+        // Clear previous graph/storage on new prompt
+        localStorage.removeItem('naumu-graph');
+        // Optional: Reset to ambient graph while loading so it looks like "clearing" the old structured one
+        setGraphData(generateInitialGraph());
 
         try {
             const response = await fetch('/api/graph', {
@@ -101,15 +108,16 @@ export default function Home() {
             if (!response.ok) throw new Error('Failed to fetch graph');
 
             const data = await response.json();
-            setGraphData(data); // Replace graph
+            setGraphData(data);
+            localStorage.setItem('naumu-graph', JSON.stringify(data));
         } catch (error) {
             console.error(error);
             alert('Error generating graph. Please try again.');
-            setIsSubmitted(false); // Revert
+            setIsSubmitted(false);
         } finally {
             setIsLoading(false);
-            setInputText(''); // Clear input
-            setIsSubmitted(false); // Reveal graph automatically
+            setInputText('');
+            setIsSubmitted(false);
         }
     };
 
@@ -136,15 +144,12 @@ export default function Home() {
             if (!target.closest('.input-container')) {
                 setIsFocused(false);
                 if (isSubmitted && !target.closest('.result-modal')) {
-                    // Optional: Dismiss submitted state?
-                    // Legacy: "If clicked outside modal and input container... remove submitted"
                     setIsSubmitted(false);
                 }
             }
         };
 
         document.addEventListener('click', handleClickOutside);
-        // document.addEventListener('touchstart', handleClickOutside); // Conflicts with interactions sometimes
         return () => {
             document.removeEventListener('click', handleClickOutside);
         };
@@ -161,22 +166,11 @@ export default function Home() {
 
             {/* Main Scene */}
             <div className="scene" id="scene">
-                {/* Only show Logo if not submitted? or keep it? Legacy keeps it but it blurs. */}
                 <div className="logo-wrapper" id="target">
                     <h1>naumu</h1>
                     <p>ideas, structured.</p>
                 </div>
             </div>
-
-            {/* Result Modal (Optional explanation or details) */}
-            {/* Legacy code had a result modal with text. We probably don't need it if we have the graph, 
-          but the user asked for "The UI visualizes this JSON as a force-directed graph."
-          Maybe we don't need the text modal? 
-          "Receive: LLM returns a JSON object representing Nodes and Edges. Render: The UI visualizes this JSON..."
-          I will keep the modal structure but maybe hide it or use it for "Loading..." or stats?
-          I'll leave it out for a cleaner "Constellation" view as requested. 
-          Actually, let's keep it for "Loading" state?
-      */}
 
             {isLoading && (
                 <div className="result-modal" style={{ opacity: 1, pointerEvents: 'auto' }}>
@@ -210,7 +204,6 @@ export default function Home() {
                     disabled={isLoading}
                 >
                     {isLoading ? (
-                        // Simple Spinner
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ animation: 'spin 1s linear infinite' }}>
                             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeDasharray="30 60" />
                         </svg>
@@ -222,9 +215,36 @@ export default function Home() {
                 </button>
             </div>
 
+            {/* Clear Button */}
+            {!isLoading && graphData.nodes.some(n => n.label) && !isFocused && (
+                <button
+                    onClick={handleClear}
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'rgba(0, 0, 0, 0.4)',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        padding: '8px 16px',
+                        transition: 'color 0.3s ease',
+                        zIndex: 100,
+                        fontFamily: 'inherit',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(0, 0, 0, 0.8)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(0, 0, 0, 0.4)')}
+                >
+                    Clear Graph
+                </button>
+            )}
+
             <style jsx global>{`
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
       `}</style>
         </>
     );
 }
+
