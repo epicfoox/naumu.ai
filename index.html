@@ -410,13 +410,7 @@
     let targetInputX = 0; // Target X from mouse/touch
     let targetInputY = 0; // Target Y from mouse/touch
 
-    // Gyro State
-    let gyroX = 0;
-    let gyroY = 0;
-    let targetGyroX = 0;
-    let targetGyroY = 0;
-    let initialBeta = null;
-    let initialGamma = null;
+
 
     let time = 0;
 
@@ -672,9 +666,7 @@
       inputX += (targetInputX - inputX) * 0.1;
       inputY += (targetInputY - inputY) * 0.1;
 
-      // Smoothly interpolate gyro input
-      gyroX += (targetGyroX - gyroX) * 0.1;
-      gyroY += (targetGyroY - gyroY) * 0.1;
+
 
       // Calculate Auto-Tilt (Circular Motion)
       const autoRotateX = Math.sin(time * 1000) * autoIntensity;
@@ -686,20 +678,16 @@
       const inputRotateY = inputX * inputIntensity;
       const inputRotateX = -inputY * inputIntensity;
 
-      // Calculate Gyro Tilt
-      const gyroRotateY = gyroX * inputIntensity;
-      const gyroRotateX = -gyroY * inputIntensity;
-
-      // Combine them (Auto + Input + Gyro)
-      const finalRotateX = inputRotateX + autoRotateX + gyroRotateX;
-      const finalRotateY = inputRotateY + autoRotateY + gyroRotateY;
+      // Combine them (Auto + Input)
+      const finalRotateX = inputRotateX + autoRotateX;
+      const finalRotateY = inputRotateY + autoRotateY;
 
       // Apply Transform
       target.style.transform = `rotateX(${finalRotateX}deg) rotateY(${finalRotateY}deg)`;
 
-      // Update Parallax Background (Input + Gyro)
-      root.style.setProperty('--tx', inputX + gyroX);
-      root.style.setProperty('--ty', inputY + gyroY);
+      // Update Parallax Background (Input)
+      root.style.setProperty('--tx', inputX);
+      root.style.setProperty('--ty', inputY);
 
       // Update and Draw Graph
       updateGraph();
@@ -739,54 +727,7 @@
 
     document.addEventListener('touchend', resetInput);
 
-    // Device Orientation (Gyroscope)
-    window.addEventListener('deviceorientation', (event) => {
-      // Beta: Front-to-back tilt (-180 to 180)
-      // Gamma: Left-to-right tilt (-90 to 90)
-      const beta = event.beta;
-      const gamma = event.gamma;
 
-      if (beta === null || gamma === null) return;
-
-      // Set initial state on first reading
-      if (initialBeta === null) {
-        initialBeta = beta;
-        initialGamma = gamma;
-      }
-
-      // Calculate difference from initial position
-      let deltaBeta = beta - initialBeta;
-      let deltaGamma = gamma - initialGamma;
-
-      // Clamp values to avoid extreme rotations (e.g., +/- 30 degrees)
-      const maxTilt = 30;
-      deltaBeta = Math.max(-maxTilt, Math.min(maxTilt, deltaBeta));
-      deltaGamma = Math.max(-maxTilt, Math.min(maxTilt, deltaGamma));
-
-      // Normalize to -1 to 1 range
-      // Note: Gamma (Left/Right) maps to X axis input
-      // Note: Beta (Up/Down) maps to Y axis input
-      // Inverted signs so the logo looks towards the user when tilting
-      targetGyroX = -(deltaGamma / maxTilt);
-      targetGyroY = -(deltaBeta / maxTilt);
-    });
-
-    // iOS 13+ Permission Request
-    function requestGyroPermission() {
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission()
-          .then(permissionState => {
-            if (permissionState === 'granted') {
-              // Permission granted
-            }
-          })
-          .catch(console.error);
-      }
-    }
-
-    // Trigger permission request on first interaction (Capture phase to ensure it runs)
-    document.addEventListener('click', requestGyroPermission, { once: true, capture: true });
-    document.addEventListener('touchstart', requestGyroPermission, { once: true, capture: true });
 
     // Auto-expand Textarea
     const textarea = document.getElementById('topic-input');
