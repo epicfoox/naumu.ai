@@ -109,6 +109,7 @@ export default function Home() {
         } finally {
             setIsLoading(false);
             setInputText(''); // Clear input
+            setIsSubmitted(false); // Reveal graph automatically
         }
     };
 
